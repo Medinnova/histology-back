@@ -1,0 +1,17 @@
+asgiref
+cffi
+cryptography
+Django==4.2.1
+django-extensions==3.2.1
+djangorestframework==3.14.0
+pycparser
+PyJWT
+pytz
+sqlparse
+python-dateutil
+django-environ
+drf-yasg
+django-samesite-none
+django-role-permissions
+django-filter
+Pillow==9.5.0

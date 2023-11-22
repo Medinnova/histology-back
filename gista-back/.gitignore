@@ -1,0 +1,7 @@
+.env
+gist_backend/static
+gist_backend/media
+gist_backend/db.sqlite3
+migrations
+__pycache__/
+output_files
