@@ -136,7 +136,6 @@ class SectionViewSet(viewsets.ModelViewSet):
         self.perform_destroy(instance)
         return Response(status=204)
 
-    # Дополнительно, если вам нужно переопределить метод perform_destroy:
     def perform_destroy(self, instance):
         instance.delete()
 

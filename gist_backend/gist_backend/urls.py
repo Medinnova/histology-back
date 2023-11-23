@@ -43,8 +43,8 @@ router.register(r'favourites', FavouriteViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    path('docs',  schema_view.with_ui( cache_timeout=0)),#'redoc',
-    path('docs1',  schema_view.without_ui( cache_timeout=0)),#'redoc',
+    path('docs/',  schema_view.with_ui( cache_timeout=0)),#'redoc',
+    path('docs1/',  schema_view.without_ui( cache_timeout=0)),#'redoc',
     
     re_path('api/', include(router.urls)),
     path('api/user/gists', UserGists.as_view()),
