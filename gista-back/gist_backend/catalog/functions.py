@@ -32,7 +32,8 @@ def get_sections(user):
         {
             'id': str(category.uuid),
             'name': category.name,
-            'subsections': get_subsections(category, user)
+            'subsections': get_subsections(category, user),
+            "gists": get_gists(category, user)
         } for category in root_categories
     ]
     return sections
