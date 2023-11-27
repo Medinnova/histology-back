@@ -107,9 +107,12 @@ class Gist(models.Model):
         }
     
     def get_deepzoom_folder_path(self):
-        full_file_name = self.image.name.split('/')[1]
-        file_name = 'image_{0}'.format(self.id)
-        return self.image.path.replace(full_file_name, '{}_files'.format(file_name))
+        try:
+            full_file_name = self.image.name.split('/')[1]
+            file_name = 'image_{0}'.format(self.id)
+            return self.image.path.replace(full_file_name, '{}_files'.format(file_name))
+        except:
+            return ""
     
     def convert_image_to_dzi(self):
         print(self.image.name)
