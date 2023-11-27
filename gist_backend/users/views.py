@@ -696,5 +696,5 @@ class UploadImageView(APIView):
 
         gist = Gist.objects.create(dzi_image=image, image=image, name=name, section=section)        
         gist.save()        
-        return Response({'message': 'Все ок', "id": gist.uuid}, status=200)
+        return Response({'message': 'Все ок', "id": gist.uuid, "image": image}, status=200)
     
