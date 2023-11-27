@@ -112,7 +112,7 @@ class Gist(models.Model):
             file_name = 'image_{0}'.format(self.id)
             return self.image.path.replace(full_file_name, '{}_files'.format(file_name))
         except:
-            return ""
+            return None
     
     def convert_image_to_dzi(self):
         print(self.image.name)
