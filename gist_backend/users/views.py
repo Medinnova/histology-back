@@ -659,14 +659,14 @@ class UploadImageView(APIView):
             ),            
         })
     def post(self, request):
-        data = json.loads(request.body)
-        name = data.get('name', '')
-        image = data.get('image', '')                   
-        section_id = data.get('section_id', '')
+        # data = json.loads(request.body)
+        # name = data.get('name', '')
+        # image = data.get('image', '')                   
+        # section_id = data.get('section_id', '')
 
-        # image = request.FILES.get('image')
-        # name = request.POST.get('name')
-        # section_id = request.POST.get('section_id') 
+        image = request.FILES.get('image')
+        name = request.POST.get('name')
+        section_id = request.POST.get('section_id') 
                    
         token = None      
         try:
