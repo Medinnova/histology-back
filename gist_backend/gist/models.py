@@ -186,6 +186,7 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
         os.remove(instance.image.path)
     if instance.dzi_image and os.path.exists(instance.dzi_image.path):
         os.remove(instance.dzi_image.path)
+    if os.path.exists(instance.get_deepzoom_folder_path()):
         shutil.rmtree(instance.get_deepzoom_folder_path())
 
 
