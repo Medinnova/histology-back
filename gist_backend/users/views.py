@@ -686,7 +686,7 @@ class UploadImageView(APIView):
             return Response({"error": "Имя не должно быть пустым!"}, status=409)
 
         if len(name) > 1000:
-            return Response({"error": "Имя слишком длинное!"}, status=409)
+            return Response({"error": "Имя слишком длинное!", "request_values": {"name": name, "image": str(image), "section_id": section_id}}, status=409)
 
         
         section = None
