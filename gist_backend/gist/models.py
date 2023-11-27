@@ -4,7 +4,7 @@ from django.contrib import admin
 from catalog.models import Category
 # from university.models import University
 
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save, pre_save, post_init
 from django.dispatch import receiver
 import os
 import shutil
@@ -156,31 +156,30 @@ class Gist(models.Model):
 
     
 
-@receiver(post_save, sender=Gist)
-def convert_image_to_dzi_on_save(sender, instance, **kwargs):
-    if "image" in instance.changed_fields:        
-        instance.convert_image_to_dzi()
-        prev_image = instance.image.path
-        img_name = "image_{0}.png".format(instance.id)
-        with Image.open(instance.image) as img:
-            img_resized = img.resize((127, 116))
-            image_io = BytesIO()
-            img_resized.save(image_io, format=img.format)
-            cropped_image_file = ContentFile(image_io.getvalue(), name=img_name)
-        img.close()
-        
-        instance.image.save(img_name, cropped_image_file, save=False)
-        os.remove(prev_image)
+@receiver(post_init, sender=Gist)
+def convert_image_to_dzi_on_save(sender, instance, **kwargs):  
+    instance.convert_image_to_dzi()
+    prev_image = instance.image.path
+    img_name = "image_{0}.png".format(instance.id)
+    with Image.open(instance.image) as img:
+        img_resized = img.resize((127, 116))
+        image_io = BytesIO()
+        img_resized.save(image_io, format=img.format)
+        cropped_image_file = ContentFile(image_io.getvalue(), name=img_name)
+    img.close()
+    
+    instance.image.save(img_name, cropped_image_file, save=False)
+    os.remove(prev_image)
 
-        current_image_path = instance.image.path
-        current_image_dir = os.path.dirname(current_image_path)
-        new_image_path = os.path.join(current_image_dir, img_name)        
-        os.rename(current_image_path, new_image_path)
-        instance.image = "gist_images/"+img_name
-        
-        post_save.disconnect(convert_image_to_dzi_on_save, sender=Gist)
-        instance.save()
-        post_save.connect(convert_image_to_dzi_on_save, sender=Gist)
+    current_image_path = instance.image.path
+    current_image_dir = os.path.dirname(current_image_path)
+    new_image_path = os.path.join(current_image_dir, img_name)        
+    os.rename(current_image_path, new_image_path)
+    instance.image = "gist_images/"+img_name
+    
+    post_save.disconnect(convert_image_to_dzi_on_save, sender=Gist)
+    instance.save()
+    post_save.connect(convert_image_to_dzi_on_save, sender=Gist)
 
 
 @receiver(models.signals.post_delete, sender=Gist)
