@@ -159,6 +159,7 @@ class Gist(models.Model):
 @receiver(post_save, sender=Gist)
 def convert_image_to_dzi_on_save(sender, instance, **kwargs):
     if "image" in instance.changed_fields:
+        return
         instance.convert_image_to_dzi()
         prev_image = instance.image.path
         img_name = "image_{0}.png".format(instance.id)
