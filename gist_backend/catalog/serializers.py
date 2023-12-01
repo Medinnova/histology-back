@@ -22,7 +22,7 @@ class SectionField(serializers.RelatedField):
 
 
 class SectionSerializer(serializers.ModelSerializer):
-    parent = SectionField(many=False, read_only=False, required=False)
+    parent = SectionField(many=False, read_only=False, required=False, allow_null=True)
     owners = UserField(many=True, read_only=False, required=False)
     name = CharField(max_length=200, min_length=1)
     class Meta:
