@@ -116,7 +116,8 @@ class Gist(models.Model):
     
     def convert_image_to_dzi(self):
         print(self.image.name)
-        
+        if not self.image:
+            return False
         full_file_name = self.image.name.split('/')[1]
         file_name = 'image_{0}'.format(self.id)
         ext = full_file_name.split('.')[1]
@@ -143,6 +144,7 @@ class Gist(models.Model):
         creator.create(image_path, dzi_output_path)
         
         self.dzi_image = 'gist_images/' + file_name + '.dzi'
+        return True
 
     def get_image_url(self):
         if self.image:
@@ -159,7 +161,9 @@ class Gist(models.Model):
 @receiver(post_save, sender=Gist)
 def convert_image_to_dzi_on_save(sender, instance, created, **kwargs):  
     if created:
-        instance.convert_image_to_dzi()
+        image_created = instance.convert_image_to_dzi()
+        if not image_created:
+            return 
         prev_image = instance.image.path
         img_name = "image_{0}.png".format(instance.id)
         with Image.open(instance.image) as img:
