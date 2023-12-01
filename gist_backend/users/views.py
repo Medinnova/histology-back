@@ -693,7 +693,10 @@ class UploadImageView(APIView):
         try:
             section = Category.objects.get(uuid=section_id)
         except:
-            return Response({"error": "No section found with given id"}, status=409)        
+            return Response({"error": "No section found with given id"}, status=409)    
+
+        if not section.owners.contains(user):
+            return Response({"error": "You hasve no access to this Section!"}, status=409)         
 
         gist = Gist.objects.create(image=image, name=name, section=section)             
         return Response({'message': 'Все ок', "id": gist.uuid, "request_values": {"name": name, "image": str(image), "section_id": section_id}}, status=200)
