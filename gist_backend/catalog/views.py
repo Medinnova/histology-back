@@ -228,7 +228,7 @@ class CreateSectionView(APIView):
         if not user:
             return Response({"error": "No user found with given token"}, status=401)          
 
-        if not section.owners.contains(user):
+        if section and not section.owners.contains(user):
             return Response({"error": "You hasve no access to this Section!"}, status=409)   
 
         user_sections = Category.objects.filter(owners__id=user.id)
