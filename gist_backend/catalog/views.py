@@ -25,6 +25,8 @@ from catalog.functions import get_sections, is_category_exists_at_same_level
 
 from gist_backend.settings import MAX_SECTIONS
 
+from rest_framework import status
+
 # Create your views here.
 class GetSectionsAPIView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -138,6 +140,29 @@ class SectionViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = request.data
+        new_name = data.get('name')
+
+        try:
+            token = request.META['HTTP_AUTHORIZATION']            
+            token = token.split(" ")[1]  
+        except Exception as e:
+            print(e, token)
+            return Response({"error": "Missing header: Authorization"}, status=401)
+
+        access_token = AccessToken(token)
+        user = User.objects.get(id=access_token['user_id'])
+
+        if not user:
+            return Response({"error": "No user found with given token"}, status=401) 
+        
+        if is_category_exists_at_same_level(new_name, user, instance.parent):
+            return Response({"error": "Раздел с таким именем уже существует!"}, status=409)
+
+        return super().partial_update(request, *args, **kwargs)
 
     
     # def get_queryset(self):
