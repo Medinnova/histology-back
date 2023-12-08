@@ -76,6 +76,10 @@ class User(AbstractUser):
     @admin.display(description='Университет')
     def university_display(self):
         return self.university
+    
+    @admin.display(description='Подписка')
+    def subscription_display(self):
+        return self.subscription
 
     def __str__(self):
         return self.username

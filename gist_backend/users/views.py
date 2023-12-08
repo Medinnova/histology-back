@@ -37,10 +37,20 @@ import json
 from django.db.models import Q
 
 
+def get_current_user(request): 
+    try:
+        token = request.META['HTTP_AUTHORIZATION']
+        token = token.split(" ")[1]  
+        access_token = AccessToken(token)
+        return User.objects.get(id=access_token['user_id'])
+    except:
+        return None
+
+
 class UserViewSet(viewsets.ModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend)
     filter_fields = ["first_name", "last_name", 'surname', 'phone_number', 'university', 'subscription']
-    http_method_names = ['get', 'post', 'head', 'patch']
+    http_method_names = ['patch']
     permission_classes = (IsAuthenticated,)
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -131,21 +141,9 @@ class UserGists(APIView):
             ),            
         })
     def get(self, request):
-        user = None
-        token = None      
-        try:
-            token = request.META['HTTP_AUTHORIZATION']
-            
-                
-            token = token.split(" ")[1]  
-        except:
-            return Response({"error": "Missing parameter: token"}, status=401)
-        try:
-            access_token = AccessToken(token)
-            user = User.objects.get(id=access_token['user_id'])
-            # user = User.objects.get(id=user_id)
-        except:
-            return Response({"error": "Wrong ID"}, status=404)
+        user = get_current_user(request)
+        if not user:
+            return Response({"error": "Wrong access token"}, status=404)
         
         response = {
             'sections': []
@@ -180,6 +178,7 @@ class UserGists(APIView):
         
 
 class UsersAPIView(APIView):
+    permission_classes = []
     @swagger_auto_schema(
         operation_description='Авторизация',        
         request_body=openapi.Schema(
@@ -216,22 +215,26 @@ class UsersAPIView(APIView):
         username = request.data['username']
         unhashed_pass = request.data['password']
         # Check username exists
-        if not User.objects.filter(username=username).exists():
+        try:
+            user = User.objects.get(Q(username=username) | Q(email=username))
+        except:
+            user = None
+        if not user:
             return Response({'success': False,
                              'message': 'Неверное имя пользователя или пароль'}, status=200)
-        self.user = User.objects.get(username=username)
-        serializer = UserSerializer(self.user)
+
+        serializer = UserSerializer(user)
         data = serializer.data
         data.pop("password", None)
-        hashed_pass = self.user.password
+        hashed_pass = user.password
         if check_password(unhashed_pass, hashed_pass):
-            refresh = RefreshToken.for_user(self.user)
+            refresh = RefreshToken.for_user(user)
             res = {
                 'success': True,
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
                 "user": data,
-                'is_staff': self.user.is_staff
+                'is_staff': user.is_staff
             }
             response = Response(res, status=200)
             response.set_cookie(
@@ -244,7 +247,7 @@ class UsersAPIView(APIView):
             )
             response.set_cookie(
                 key='user_id',
-                value=self.user.id,
+                value=user.id,
                 httponly=True,
                 samesite="None",
                 secure=True
@@ -280,12 +283,12 @@ class UserGetAPIView(APIView):
                 }
             ),            
         })
-    def get(self, request):
-        token = request.META['HTTP_AUTHORIZATION']                
-        token = token.split(" ")[1] 
+    def get(self, request):        
         try:
-            access_token = AccessToken(token)
-            user = User.objects.get(id=access_token['user_id'])            
+            user = get_current_user(request)
+            if not user:
+                return Response({"error": "Wrong access token"}, status=404)
+                          
             serializer = UserSerializer(user)
             data = serializer.data
             data.pop("password", None)
@@ -333,10 +336,13 @@ class RegisterAPIView(APIView):
     def post(self, request):
         unhashed_pass = request.data['password']
         
-        first_name = request.data['first_name']
-        last_name = request.data['last_name']
-        surname = request.data['surname']
-
+        try:
+            first_name = request.data['first_name']
+            last_name = request.data['last_name']
+            surname = request.data['surname']
+        except:
+            return Response({'success': False, 'message': 'Переданы не все параметры!'}, status=401) 
+        
         for e in first_name + last_name + surname:
             if not e.isalnum():
                 return Response({'success': False, 'message': 'ФИО не должно содержать специальных символов!'}, status=401) 
@@ -347,11 +353,20 @@ class RegisterAPIView(APIView):
         for symbol in replace_list:
             phone = phone.replace(symbol, '')
 
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return Response({'success': False, 'message': 'Неверный формат Email!'}, status=401) 
+
+        if re.search('[а-яА-Я]', unhashed_pass) or len(unhashed_pass) < 5:
+            return Response({'success': False, 'message': 'Неверный формат пароля!'}, status=401) 
+
+        if len(first_name) < 2 or len(surname) < 2 or len(last_name) < 2:
+            return Response({'success': False, 'message': 'Неверное ФИО!'}, status=401) 
+
         try:
-            User.objects.get(email=email)
-            User.objects.get(phone=phone)
+            User.objects.get(Q(email=email) | Q(phone_number=phone) | Q(username=email))            
             return Response({'success': False, 'message': 'Такой пользователь уже существует!'}, status=401)
-        except:
+        except Exception as e:
+            print("ERROR:", e)
             pass
         
         new_user = User.objects.create(username=email, first_name=first_name, last_name=last_name, surname=surname, email=email, phone_number=phone)
@@ -398,13 +413,11 @@ class UserExistsAPIView(APIView):
         phone = data.get('phone', '')        
         phone = re.sub('[()+-]', '', phone)
         
-        
-        users = User.objects.filter(Q(phone_number=phone) | Q(email=email))    
-        if users:        
+        try:
+            User.objects.get(Q(phone_number=phone) & Q(email=email) | Q(username=email))
             return Response({'exists': True}, status=200)
-        else:
+        except:
             return Response({'exists': False}, status=200)
-        
 
 
 class SendRestoreLinkAPIView(APIView):
@@ -494,6 +507,15 @@ class SendConfirmationCodeAPIView(APIView):
         })
     def post(self, request):        
         email = request.data['email']
+
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return Response({'success': False, 'message': 'Неверный формат Email!'}, status=401)
+
+        try:
+            User.objects.get(Q(email=email) | Q(username=email))
+        except:
+            return Response({'success': False, 'message': 'Пользователя с таким Email не существует!'}, status=401)
+
         confirmation = None
         try:
             confirmation = Confirmation.objects.get(email=email)
@@ -540,16 +562,21 @@ class RestorePasswordAPIView(APIView):
     def post(self, request):        
         password = request.data['password']
         email = request.data['email']
-        
-        user = None
-        try:
-            user = User.objects.get(email=email)
-        except:
-            return Response({'success': False, 'message': 'Такой пользователь не существует!'}, status=401)
-        
-        user.set_password(password)
 
-        return Response({'success': True, 'message': 'Пароль успешно был изменен!'}, status=200)
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return Response({'success': False, 'message': 'Неверный формат Email!'}, status=401)
+        
+        if re.search('[а-яА-Я]', password) or len(password) < 5:
+            return Response({'success': False, 'message': 'Неверный формат пароля!'}, status=401)
+
+        try:
+            user = User.objects.get(Q(email=email) | Q(username=email))
+            user.set_password(password)
+            return Response({'success': True, 'message': 'Пароль успешно был изменен!'}, status=200)
+        except:
+            return Response({'success': False, 'message': 'Пользователя с таким Email не существует!'}, status=401)
+        
+
 
 
 class RefreshTokenView(APIView):
@@ -668,27 +695,19 @@ class UploadImageView(APIView):
         name = request.POST.get('name')
         section_id = request.POST.get('section_id') 
                    
-        token = None      
-        try:
-            token = request.META['HTTP_AUTHORIZATION']
-            token = token.split(" ")[1]  
-        except Exception as e:
-            print(e, token) 
-            return Response({"error": "Missing header: Authorization"}, status=401)
-        
-        access_token = AccessToken(token)
-        user = User.objects.get(id=access_token['user_id'])
-
+        user = get_current_user(request)
         if not user:
-            return Response({"error": "No user found with given token"}, status=401)           
+            return Response({"error": "Wrong access token"}, status=404)          
 
         if len(name) == 0:
             return Response({"error": "Имя не должно быть пустым!"}, status=409)
 
         if len(name) > 1000:
-            return Response({"error": "Имя слишком длинное!", "request_values": {"name": name, "image": str(image), "section_id": section_id}}, status=409)
+            return Response({"error": "Имя слишком длинное!"}, status=409)
 
-        
+        if not image:
+            return Response({"error": "Не прикреплено изображение!"}, status=409)
+
         section = None
         try:
             section = Category.objects.get(uuid=section_id)
@@ -699,5 +718,5 @@ class UploadImageView(APIView):
             return Response({"error": "You hasve no access to this Section!"}, status=409)         
 
         gist = Gist.objects.create(image=image, name=name, section=section)             
-        return Response({'message': 'Все ок', "id": gist.uuid, "request_values": {"name": name, "image": str(image), "section_id": section_id}}, status=200)
+        return Response({'message': 'Все ок', "id": gist.uuid}, status=200)
     

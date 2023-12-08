@@ -55,8 +55,9 @@ class Subscription(models.Model):
         # написать функицю для оплаты
 
         # if success
-        self.start_date = self.end_date
+        # self.start_date = self.end_date
         self.end_date = self.end_date + relativedelta(months=self.duration)
+        self.save()
 
     @admin.display(description='Имя подписки')
     def name_display(self):
@@ -75,4 +76,4 @@ class Subscription(models.Model):
         return str(self.end_date)
 
     def __str__(self):
-        return f'<Subscrition obj> UUID:{self.uuid}'
+        return f'{self.plan.name}'

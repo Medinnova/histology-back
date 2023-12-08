@@ -28,6 +28,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 import json
 
+from gist_backend.settings import CODE_LIMIT_GENERAATION_AT_ONCE
+
 class UniversityViewSet(viewsets.ModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend)
     filter_fields = ["name", "address"]
@@ -144,7 +146,7 @@ class GenerateCodes(APIView):
         })
     def post(self, request):        
         university_id = request.data['university_id']
-        amount = request.data["amount"]
+        amount = int(request.data["amount"])
         university = None
 
         try:
@@ -153,6 +155,7 @@ class GenerateCodes(APIView):
             return Response({"error": "University not found!"}, status=400)            
 
         i = 0
+        amount  = amount if amount < CODE_LIMIT_GENERAATION_AT_ONCE else CODE_LIMIT_GENERAATION_AT_ONCE
         while i < amount:
             current_code = UniversityCode.objects.create(university=university)
             current_code.save()

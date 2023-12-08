@@ -287,3 +287,5 @@ STATIC_ROOT = BASE_DIR / 'static'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+CODE_LIMIT_GENERAATION_AT_ONCE = int(os.getenv("CODE_LIMIT_GENERAATION_AT_ONCE", "1000")) # Ограничение на единоразовую генерацию кодов для универа за раз

@@ -4,12 +4,14 @@ from subscription.models import Subscription, Plan
 # Register your models here.
 
 @admin.register(Subscription)
-class UniversityAdmin(admin.ModelAdmin):
+class SubscriptionAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         # Форма для создания универа
         form.base_fields["plan"].label = "План подписки"
         form.base_fields['duration'].label = "Длительность подписки (в месяцах)"        
+        form.base_fields['start_date'].label = "Дата начала подписки"        
+        form.base_fields['end_date'].label = "Дата окончания подписки"        
         
         return form
 
@@ -17,12 +19,12 @@ class UniversityAdmin(admin.ModelAdmin):
     list_display = ('name_display', 'duration_display')
 
     # Поля для добавления нового универа
-    fields = ('plan', 'duration')
+    fields = ('plan', 'duration', 'start_date', 'end_date')
 
 
 
 @admin.register(Plan)
-class UniversityAdmin(admin.ModelAdmin):
+class PlanAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         # Форма для создания универа

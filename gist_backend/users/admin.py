@@ -29,6 +29,7 @@ class SectionAdmin(admin.ModelAdmin):
         form.base_fields['surname'].required = False
         form.base_fields['phone_number'].required = False
         form.base_fields['university'].required = False
+        form.base_fields['subscription'].required = False
 
         form.base_fields['role'] = forms.ChoiceField(
             choices=[(role.get_name(), role.get_name()) for role in AbstractUserRole.__subclasses__()],
@@ -52,14 +53,14 @@ class SectionAdmin(admin.ModelAdmin):
 
     # Кортеж столбцов, отображаемых в списке пользователей
     list_display = ('username_display', 'email_display', 'is_staff_display',
-                    'is_superuser_display', 'date_joined_display', 'id_display', 'university_display')
+                    'is_superuser_display', 'date_joined_display', 'id_display', 'university_display', 'subscription_display')
 
     # Настройка фильтра для поиска по полю username
     search_fields = ('username__startswith',)
 
     # Поля для добавления нового пользователя
     fields = ('username', 'password', 'is_staff', 'date_joined', 'is_superuser', 'email', 'first_name', 'last_name',
-              'surname', 'phone_number', 'university')
+              'surname', 'phone_number', 'university', 'subscription')
 
     # Фильтры
     list_filter = ('is_staff', 'is_superuser', 'is_active')

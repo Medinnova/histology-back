@@ -33,7 +33,7 @@ schema_view = get_schema_view(
 
 router = routers.SimpleRouter()
 router.register(r'sections', SectionViewSet)
-router.register(r'users', UserViewSet)
+router.register(r'user', UserViewSet)
 router.register(r'universities', UniversityViewSet)
 router.register(r'gists', GistViewSet)
 router.register(r'subscriptions', SubscriptionViewSet)
@@ -47,7 +47,7 @@ urlpatterns = [
     path('docs1/',  schema_view.without_ui( cache_timeout=0)),#'redoc',
     
     re_path('api/', include(router.urls)),
-    path('api/user/gists', UserGists.as_view()),
+    # path('api/user/gists', UserGists.as_view()),
 
     path('api/auth', UsersAPIView.as_view()),
     path('api/user/exists', UserExistsAPIView.as_view()),

@@ -21,11 +21,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.http import Http404, JsonResponse
 from rest_framework import viewsets
 
+from users.views import get_current_user
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend)
     filter_fields = ["plan", "start_date", 'end_date', 'is_active']
-    http_method_names = ['get', 'post', 'head', 'patch']
+    http_method_names = []
     permission_classes = (IsAuthenticated,)
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
@@ -41,15 +42,12 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
 # Оформить подписку
 class BuySubscrition(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (TokenAuthentication,)
     @swagger_auto_schema(
-        operation_description='Купить подписку',        
+        operation_description='Купить подписку, передается id плана подписки',        
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['user_id','subscription_plan_id'],
-            properties={
-                'user_id':openapi.Schema(type=openapi.TYPE_STRING),
+            required=['subscription_plan_id'],
+            properties={               
                 'subscription_plan_id':openapi.Schema(type=openapi.TYPE_STRING),                
             },
         ),
@@ -74,19 +72,16 @@ class BuySubscrition(APIView):
             ),            
         })
     def post(self, request):        
-        user_id = request.data['user_id']
-        current_user = None
-        try:
-            current_user = User.objects.get(id=user_id)
-        except:
-            return Response({"error": "Unauthorized!"}, status=400)            
+        current_user = get_current_user(request)
+        if not current_user:
+            return Response({"error": "Wrong access token"}, status=404)            
 
         subscription_plan_id = request.data['subscription_plan_id']
         plan = None
         try:
             plan = Plan.objects.get(id=subscription_plan_id)
         except:
-            return Response({"error": "Плана подписки с таким id не найдено!"}, status=400)
+            return Response({"error": "Плана подписки с таким id не найдено!"}, status=401)
 
         current_user.subscription = Subscription.objects.create(plan=plan)
         current_user.save() 
@@ -96,15 +91,12 @@ class BuySubscrition(APIView):
 
 # Продлить подписку
 class RenewSubscrition(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (TokenAuthentication,)
     @swagger_auto_schema(
-        operation_description='Продлить подписку',        
+        operation_description='Продлить подписку, передается только token в headers',        
         request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            required=['user_id','subscription_plan_id'],
+            type=openapi.TYPE_OBJECT,            
             properties={
-                'user_id':openapi.Schema(type=openapi.TYPE_STRING),                                
+                                             
             },
         ),
         responses={
@@ -128,17 +120,13 @@ class RenewSubscrition(APIView):
             ),            
         })
     def post(self, request):        
-        user_id = request.data['user_id']
-        current_user = None
-        try:
-            current_user = User.objects.get(id=user_id)
-        except:
-            return Response({"error": "Unauthorized!"}, status=400)            
+        current_user = get_current_user(request)
+        if not current_user:
+            return Response({"error": "Wrong access token"}, status=404)         
 
         # TODO тут оплата и если успешно то продляем
 
-        current_user.subscription.start_date = current_user.subscription.end_date
-        current_user.subscription.end_date = current_user.subscription.end_date + relativedelta(months=current_user.subcription.duration)
+        current_user.subscription.renew_subscription()
         current_user.save() 
         
         return Response({'message': 'Вы успешно продлили подписку!'}, status=200)

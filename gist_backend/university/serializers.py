@@ -19,6 +19,10 @@ class UniversityField(serializers.RelatedField):
             )
 
 
-class UniversitySerializer(serializers.Serializer):
+class UniversitySerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=200, min_length=1)
     address = serializers.CharField(max_length=500, min_length=5)
+
+    class Meta:
+        model = University
+        fields = ['id', 'name', 'address']
