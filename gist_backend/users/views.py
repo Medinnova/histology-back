@@ -50,7 +50,7 @@ def get_current_user(request):
 class UserViewSet(viewsets.ModelViewSet):
     filter_backends = (SearchFilter, DjangoFilterBackend)
     filter_fields = ["first_name", "last_name", 'surname', 'phone_number', 'university', 'subscription']
-    http_method_names = ['patch']
+    http_method_names = ['patch ']
     permission_classes = (IsAuthenticated,)
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -510,11 +510,6 @@ class SendConfirmationCodeAPIView(APIView):
 
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             return Response({'success': False, 'message': 'Неверный формат Email!'}, status=401)
-
-        try:
-            User.objects.get(Q(email=email) | Q(username=email))
-        except:
-            return Response({'success': False, 'message': 'Пользователя с таким Email не существует!'}, status=401)
 
         confirmation = None
         try:
